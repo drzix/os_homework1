@@ -125,9 +125,6 @@ struct time_info get_sjf_time(const struct job_head *head)
         return info;
 }
 
-#define first_sched(wjob)   ((wjob)->run_time == 0)
-#define job_done(wjob)  ((wjob)->run_time == (wjob)->job->amount_time)
-
 /**
 * rr_sched_job - Round Robin 스케쥴링 방식으로 job의 스케쥴링을 수행
 * @info: 시간 정보 기록 (response time)
@@ -137,7 +134,7 @@ struct time_info get_sjf_time(const struct job_head *head)
 * 처음 스케쥴 된 경우 response time을 계산
 * job의 남은 시간과 퀀텀 중에서 더 작은 시간만 수행
 */
-sched_time_t rr_sched_job(struct time_info *info, const int now,
+sched_time_t rr_sched_job(struct time_info *info, const sched_time_t now,
                           struct wait_job *wjob)
 {
         sched_time_t rest_time = wjob->job->amount_time - wjob->run_time;
@@ -187,7 +184,7 @@ void rr_repush_wait_job(struct list_head *rq)
 * 대기 목록 큐에서 job을 삭제 및 turnaround time 계산
 */
 void rr_pop_wait_job(struct wait_job *wjob, struct time_info *info,
-                     const int now)
+                     const sched_time_t now)
 {
         list_del(&wjob->rr_list);
         info->tard_time += now - wjob->job->arrived;

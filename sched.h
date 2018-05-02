@@ -34,7 +34,7 @@ extern struct time_info get_rr_time(const struct job_head *head);
 * response time과 turnaround time을 계산
 */
 static inline sched_time_t sched_job(struct time_info *info,
-                                     const int now,
+                                     const sched_time_t now,
                                      const struct job_info *job)
 {
         sched_time_t resp_time = now - job->arrived;
@@ -54,6 +54,17 @@ struct wait_job {
         struct list_head                rr_list;
         sched_time_t                    run_time;
 };
+
+/**
+* job_arrived - 현재 job이 도착한 상태인지 확인
+* @job: job의 정보
+* @now: 현재 시간
+*/
+static inline int job_arrived(const struct job_info *job,
+                              const sched_time_t now)
+{
+        return job->arrived <= now;
+}
 
 /**
 * get_shortest_job - shortest job을 구함
@@ -78,16 +89,35 @@ extern void sjf_pop_wait_job(struct wait_job *wjob, struct rb_root *root);
 *
 * 대기 목록 큐의 다음 헤드가 이번에 스케쥴 될 job
 */
-static inline struct wait_job *get_rr_next(struct list_head *rq)
+static inline struct wait_job *get_rr_next(const struct list_head *rq)
 {
         return container_of(rq->next, struct wait_job, rr_list);
 }
 
-extern sched_time_t rr_sched_job(struct time_info *info, const int now,
+/**
+* first_sched - 처음 스케쥴 된 job인지 확인
+* @wjob: 스케쥴 된 대기 중이던 job
+*/
+static inline int first_sched(const struct wait_job *wjob)
+{
+        return wjob->run_time == 0;
+}
+
+/**
+* job_done - job이 끝났는지 확인
+* @wjob: 스케쥴 된 대기 중이던 job
+*/
+static inline int job_done(const struct wait_job *wjob)
+{
+        return wjob->run_time == wjob->job->amount_time;
+}
+
+extern sched_time_t rr_sched_job(struct time_info *info,
+                                 const sched_time_t now,
                                  struct wait_job *wjob);
 extern void rr_push_wait_job(struct list_head *rq, struct job_info *job);
 extern void rr_repush_wait_job(struct list_head *rq);
 extern void rr_pop_wait_job(struct wait_job *wjob, struct time_info *info,
-                            const int now);
+                            const sched_time_t now);
 
 #endif
