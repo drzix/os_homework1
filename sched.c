@@ -5,7 +5,10 @@ struct time_info get_fcfs_time(const struct job_head *head)
 {
         const struct job_info *jobs = head->jobs;
         const int jcnt = head->job_cnt;
-        struct time_info info = { 0, 0 };
+        struct time_info info = {
+                .tard_time = 0,
+                .resp_time = 0
+        };
         sched_time_t now = jobs->arrived;
 
         for (int i = 0; i < jcnt; i++) {
@@ -16,7 +19,8 @@ struct time_info get_fcfs_time(const struct job_head *head)
         return info;
 }
 
-void push_wait_job(struct rb_root *root, struct job_info *job, int idx)
+void push_wait_job(struct rb_root *root, const struct job_info *job,
+                   const int idx)
 {
         struct wait_job *new = malloc(sizeof(struct wait_job));
         struct rb_node **node = &(root->rb_node), *parent = NULL;
@@ -64,7 +68,10 @@ struct time_info get_sjf_time(const struct job_head *head)
 {
         const struct job_info *jobs = head->jobs;
         const int jcnt = head->job_cnt;
-        struct time_info info = { 0, 0 };
+        struct time_info info = {
+                .tard_time = 0,
+                .resp_time = 0
+        };
         sched_time_t now = jobs->arrived;
 
         struct rb_root wait_tree = RB_ROOT;
@@ -90,6 +97,9 @@ struct time_info get_rr_time(const struct job_head *head)
 {
         const struct job_info *jobs = head->jobs;
         const int jcnt = head->job_cnt;
-        struct time_info info = { 0, 0 };
+        struct time_info info = {
+                .tard_time = 0,
+                .resp_time = 0
+        };
         return info;
 }

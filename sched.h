@@ -45,7 +45,8 @@ static inline struct wait_job *get_shortest_job(struct rb_root *root)
         return container_of(rb_first(root), struct wait_job, wait_node);
 }
 
-extern void push_wait_job(struct rb_root *root, struct job_info *job, int idx);
+extern void push_wait_job(struct rb_root *root, const struct job_info *job,
+                          const int idx);
 extern void pop_wait_job(struct wait_job *wjob, struct rb_root *root);
 
 #endif
