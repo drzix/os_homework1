@@ -1,4 +1,4 @@
-/* copied from the Linux kernel source (GPL v2) */
+﻿/* copied from the Linux kernel source (GPL v2) */
 
 #ifndef _LINUX_LIST_H
 #define _LINUX_LIST_H

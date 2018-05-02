@@ -1,6 +1,13 @@
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include "sched.h"
 
+/**
+* get_fcfs_time - First Come First Served 스케쥴링으로 수행된 job들의
+*                 총 turnaround time과 총 response time을 구함
+* @head: job 목록
+*
+* 모든 job을 차례대로 순회하며 시간을 누적하여 계산
+*/
 struct time_info get_fcfs_time(const struct job_head *head)
 {
         struct job_info *jobs = head->jobs;
@@ -13,13 +20,21 @@ struct time_info get_fcfs_time(const struct job_head *head)
 
         for (int i = 0; i < jcnt; i++) {
                 if ((jobs + i)->arrived > now)
-                    now = (jobs + i)->arrived;
+                        now = (jobs + i)->arrived;
                 now += sched_job(&info, now, jobs + i);
         }
 
         return info;
 }
 
+/**
+* sjf_push_wait_job - 새로 도착한 job을 대기 목록에 넣음
+* @root: 대기 목록 레드블랙트리의 루트
+* @job: 새로 도착한 job
+* @idx: job의 job 목록에서의 인덱스
+*
+* 새로 도착한 job을 amount time과 인덱스 순의 비교로 레드블랙트리에 삽입
+*/
 void sjf_push_wait_job(struct rb_root *root, const struct job_info *job,
                        const int idx)
 {
@@ -46,6 +61,13 @@ void sjf_push_wait_job(struct rb_root *root, const struct job_info *job,
         rb_insert_color(&new->sjf_node, root);
 }
 
+/**
+* sjf_pop_wait_job - 스케쥴 된 대기 중이던 job을 대기 목록에서 삭제
+* @wjob: 스케쥴 된 대기 중이던 job
+* @root: 대기 목록 레드블랙트리의 루트
+*
+* 레드블랙트리에서 노드를 삭제
+*/
 void sjf_pop_wait_job(struct wait_job *wjob, struct rb_root *root)
 {
         rb_erase(&wjob->sjf_node, root);
@@ -66,6 +88,15 @@ void sjf_pop_wait_job(struct wait_job *wjob, struct rb_root *root)
                 }                                                             \
         } while (0)
 
+/**
+* get_sjf_time - Shortest Job First 스케쥴링으로 수행된 job들의
+*                총 turnaround time과 총 response time을 구함
+* @head: job 목록
+*
+* 모든 job을 차례대로 순회하며 시간을 누적하면서
+* 어떤 job이 끝난 시점을 포함한 이전 시간에 도착한
+* 도착한 job들을 레드블랙트리로 관리
+*/
 struct time_info get_sjf_time(const struct job_head *head)
 {
         struct job_info *jobs = head->jobs;
@@ -97,6 +128,15 @@ struct time_info get_sjf_time(const struct job_head *head)
 #define first_sched(wjob)   ((wjob)->run_time == 0)
 #define job_done(wjob)  ((wjob)->run_time == (wjob)->job->amount_time)
 
+/**
+* rr_sched_job - Round Robin 스케쥴링 방식으로 job의 스케쥴링을 수행
+* @info: 시간 정보 기록 (response time)
+* @now: 현재 시간
+* @wjob: 스케쥴 된 대기 중이던 job
+*
+* 처음 스케쥴 된 경우 response time을 계산
+* job의 남은 시간과 퀀텀 중에서 더 작은 시간만 수행
+*/
 sched_time_t rr_sched_job(struct time_info *info, const int now,
                           struct wait_job *wjob)
 {
@@ -110,6 +150,13 @@ sched_time_t rr_sched_job(struct time_info *info, const int now,
         return perf_time;
 }
 
+/**
+* rr_push_wait_job - 새로 도착한 job을 대기 목록 큐에 넣음
+* @rq: 대기 목록 큐
+* @job: 새로 도착한 job
+*
+* 새로 도착한 job을 리스트의 tail에 삽입
+*/
 void rr_push_wait_job(struct list_head *rq, struct job_info *job)
 {
         struct wait_job *new = malloc(sizeof(struct wait_job));
@@ -119,11 +166,26 @@ void rr_push_wait_job(struct list_head *rq, struct job_info *job)
         list_add_tail(&new->rr_list, rq);
 }
 
+/**
+* rr_repush_wait_job - 아직 끝나지 않은 job을 다시 대기 큐에 넣음
+* @rq: 대기 목록 큐
+*
+* 현재 head인 노드를 tail로 바꿔준다
+* 반드시 하나 이상의 job이 대기 상태에 있어야 함
+*/
 void rr_repush_wait_job(struct list_head *rq)
 {
         list_rotate_left(rq);
 }
 
+/**
+* rr_pop_wait_job - 스케쥴 된 대기 중이던 job을 대기 목록에서 삭제
+* @wjob: 스케쥴 된 대기 중이던 job
+* @info: 시간 정보 기록 (turnaround time)
+* @now: 현재 시간
+*
+* 대기 목록 큐에서 job을 삭제 및 turnaround time 계산
+*/
 void rr_pop_wait_job(struct wait_job *wjob, struct time_info *info,
                      const int now)
 {
@@ -132,6 +194,13 @@ void rr_pop_wait_job(struct wait_job *wjob, struct time_info *info,
         free(wjob);
 }
 
+/**
+* get_rr_time - Round Robin 스케쥴링으로 수행된 job들의
+*               총 turnaround time과 총 response time을 구함
+* @head: job 목록
+*
+* 기본적인 Round Robin 스케쥴 방식의 알고리즘에 의거
+*/
 struct time_info get_rr_time(const struct job_head *head)
 {
         struct job_info *jobs = head->jobs;
@@ -171,7 +240,7 @@ struct time_info get_rr_time(const struct job_head *head)
                 }
 
                 if (job_done(next_wjob))
-                        rr_pop_wait_job(next_wjob,&info, now);
+                        rr_pop_wait_job(next_wjob, &info, now);
                 else
                         rr_repush_wait_job(&rr_queue);
         } while (!list_empty(&rr_queue) || trav < jcnt);

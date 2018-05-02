@@ -1,4 +1,4 @@
-#ifndef _SCHED_H
+﻿#ifndef _SCHED_H
 #define _SCHED_H
 
 #include "rbtree.h"
@@ -25,6 +25,14 @@ extern struct time_info get_fcfs_time(const struct job_head *head);
 extern struct time_info get_sjf_time(const struct job_head *head);
 extern struct time_info get_rr_time(const struct job_head *head);
 
+/**
+* sched_job - FCFS 스케쥴링과 SJF 스케쥴링에서 job의 스케쥴링을 수행
+* @info: 시간 정보 기록 (response time)
+* @now: 현재 시간
+* @job: 스케쥴 된job
+*
+* response time과 turnaround time을 계산
+*/
 static inline sched_time_t sched_job(struct time_info *info,
                                      const int now,
                                      const struct job_info *job)
@@ -47,6 +55,12 @@ struct wait_job {
         sched_time_t                    run_time;
 };
 
+/**
+* get_shortest_job - shortest job을 구함
+* @root: 대기 목록 레드블랙트리의 루트
+*
+* 대기 목록 레드블랙트리의 가장 왼쪽 리프가 shortest job
+*/
 static inline struct wait_job *get_shortest_job(struct rb_root *root)
 {
         return container_of(rb_first(root), struct wait_job, sjf_node);
@@ -58,6 +72,12 @@ extern void sjf_pop_wait_job(struct wait_job *wjob, struct rb_root *root);
 
 #define NR_RR_QUANTUM   4
 
+/**
+* get_rr_next - Round Robin 스케쥴링의 다음 스케쥴 될 job을 구함
+* @rq: 대기 목록 큐
+*
+* 대기 목록 큐의 다음 헤드가 이번에 스케쥴 될 job
+*/
 static inline struct wait_job *get_rr_next(struct list_head *rq)
 {
         return container_of(rq->next, struct wait_job, rr_list);
