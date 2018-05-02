@@ -75,17 +75,17 @@ void sjf_pop_wait_job(struct wait_job *wjob, struct rb_root *root)
 }
 
 #define job_arrived(now, job)        ((job)->arrived <= (now))
-#define sjf_pull_arrived_jobs(trav, job_cnt, now, jobs, wait_tree)            \
-        do {                                                                  \
-                for (int i = (trav); i < (job_cnt); i++) {                    \
-                        if (job_arrived((now), (jobs) + i)) {                 \
-                                sjf_push_wait_job((wait_tree),                \
-                                                  (jobs) + i, i);             \
-                                (trav)++;                                     \
-                        } else {                                              \
-                                break;                                        \
-                        }                                                     \
-                }                                                             \
+#define sjf_pull_arrived_jobs(trav, job_cnt, now, jobs, wait_tree)      \
+        do {                                                            \
+                for (int i = (trav); i < (job_cnt); i++) {              \
+                        if (job_arrived((now), (jobs) + i)) {           \
+                                sjf_push_wait_job((wait_tree),          \
+                                                  (jobs) + i, i);       \
+                                (trav)++;                               \
+                        } else {                                        \
+                                break;                                  \
+                        }                                               \
+                }                                                       \
         } while (0)
 
 /**
@@ -194,6 +194,18 @@ void rr_pop_wait_job(struct wait_job *wjob, struct time_info *info,
         free(wjob);
 }
 
+#define rr_pull_arrived_jobs(trav, job_cnt, now, jobs, rq)              \
+        do {                                                            \
+                for (int i = (trav); i < (jcnt); i++) {                 \
+                        if (job_arrived((now), (jobs)+i)) {             \
+                                rr_push_wait_job(rq, (jobs)+i);         \
+                                (trav)++;                               \
+                        } else {                                        \
+                                break;                                  \
+                        }                                               \
+                }                                                       \
+        } while (0)
+
 /**
 * get_rr_time - Round Robin 스케쥴링으로 수행된 job들의
 *               총 turnaround time과 총 response time을 구함
@@ -218,26 +230,13 @@ struct time_info get_rr_time(const struct job_head *head)
         do {
                 if (list_empty(&rr_queue)) {
                         now = (jobs + trav)->arrived;
-                        for (int i = trav; i < jcnt; i++) {
-                                if (job_arrived(now, jobs + i)) {
-                                        rr_push_wait_job(&rr_queue, jobs + i);
-                                        trav++;
-                                } else
-                                        break;
-                        }
+                        rr_pull_arrived_jobs(trav, jcnt, now, jobs, &rr_queue);
                         continue;
                 }
 
                 next_wjob = get_rr_next(&rr_queue);
                 now += rr_sched_job(&info, now, next_wjob);
-
-                for (int i = trav; i < jcnt; i++) {
-                        if (job_arrived(now, jobs + i)) {
-                                rr_push_wait_job(&rr_queue, jobs + i);
-                                trav++;
-                        } else
-                                break;
-                }
+                rr_pull_arrived_jobs(trav, jcnt, now, jobs, &rr_queue);
 
                 if (job_done(next_wjob))
                         rr_pop_wait_job(next_wjob, &info, now);
