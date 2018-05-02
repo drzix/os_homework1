@@ -74,7 +74,6 @@ void sjf_pop_wait_job(struct wait_job *wjob, struct rb_root *root)
         free(wjob);
 }
 
-#define job_arrived(now, job)        ((job)->arrived <= (now))
 #define sjf_pull_arrived_jobs(trav, job_cnt, now, jobs, wait_tree)      \
         do {                                                            \
                 for (int i = (trav); i < (job_cnt); i++) {              \

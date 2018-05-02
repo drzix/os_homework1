@@ -60,8 +60,8 @@ struct wait_job {
 * @job: job의 정보
 * @now: 현재 시간
 */
-static inline int job_arrived(const struct job_info *job,
-                              const sched_time_t now)
+static inline int job_arrived(const sched_time_t now,
+                              const struct job_info *job)
 {
         return job->arrived <= now;
 }
